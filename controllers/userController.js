@@ -1,5 +1,4 @@
-const { ObjectId } = require('mongoose').Types;
-const { User, Thought } = require('../models');
+const { User } = require('../models');
 
 // Controllers for the user routes
   module.exports = {
@@ -100,5 +99,33 @@ const { User, Thought } = require('../models');
         res.status(500).json(err);
       }
     },
+
+    // Adding a friend to a user's friend list
+    async addFriend(req, res) {
+      try {
+        const user = await User.findById(req.params.userId);
+        const friendId = req.params.friendId;
+
+        if (!user) {
+          return res.status(400).json({ message: 'no user found with that ID' })
+        }
+
+        // Check to see if the user is already friends with the requested friend to add
+        if (user.friends.includes(friendId)) {
+          return res.json(400).json({ message: 'User is already friends with this person' })
+        }
+
+        // Add friend to friends list
+        user.friends.push(friendId);
+        await user.save();
+
+        res.json({ message: 'Friend has been added successfully' })
+        } catch (err) {
+          console.error(err);
+          res.status(500).json(err);
+      }
+    },
+
+    // Removing a friend from friend list
   };
   
