@@ -127,5 +127,24 @@ const { User } = require('../models');
     },
 
     // Removing a friend from friend list
+    async deleteFriend(req, res) {
+      try {
+        const { userId, friendId } = req.params;
+        const user = await User.findByIdAndUpdate(
+          userId, 
+          { $pull: { friends: friendId } },
+          { new: true }
+        );
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found'});
+        }
+
+        res.json(user);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json(err);
+      }
+    }
   };
   
