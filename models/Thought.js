@@ -17,7 +17,7 @@ const thoughtSchema = new Schema(
             type: String,
             required: true,
         },
-        reactions: [reactionScema],
+        reactions: [{ type: Schema.Types.ObjectId, ref: 'Reaction'}],
     },
     {
         toJSON: { getters: true },
