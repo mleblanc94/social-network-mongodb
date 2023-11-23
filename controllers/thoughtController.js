@@ -31,7 +31,7 @@ async getSingleThought(req, res) {
 // Create a new thought
 async createThought(req, res) {
     try {
-        const { thoughtText, username, userId }
+        const { thoughtText, username, userId } = req.body;
         const thought = await Thought.create({ thoughtText, username });
 
         // Push the created thought's ID to the associated user's thoughts array field
