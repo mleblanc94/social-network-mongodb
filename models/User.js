@@ -18,9 +18,8 @@ const userSchema = new Schema(
       },
       thoughts: [
       {
-        type: String,
-        required: true,
-        max_length: 50,
+        type: Schema.Types.ObjectId,
+        ref: 'Thought',
       },
     ],
       friends: [
