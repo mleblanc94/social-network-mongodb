@@ -1,69 +1,67 @@
 const mongoose = require('mongoose');
-const { generateRandomUser, generateRandomThought, generateRandomReaction } = require('./data');
+const { Schema, model, Types } = mongoose;
 const User = require('../models/User');
-const Reaction = require('../models/Reaction');
 const Thought = require('../models/Thought');
+const Reaction = require('../models/Reaction');
+const { userData, thoughtData, reactionData } = require('./data');
 
-mongoose.connect('mongodb://127.0.0.1:27017/studentsDB', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
+// Your database connection URI
+const DB_URI = 'mongodb://127.0.0.1:27017/studentsDB';
 
-mongoose.connection.on('error', (err) => {
-    console.error('Connection Error', err)
-});
+// Function to seed the database
+async function seedDatabase() {
+  try {
+    // Connect to the database
+    await mongoose.connect(DB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-mongoose.connection.once('open', async () => {
-    console.log('Connected to MongoDB');
+    // Clear existing data
+    await Promise.all([User.deleteMany(), Thought.deleteMany(), Reaction.deleteMany()]);
 
-    try {
-    mongoose.connection.dropDatabase();
+    // Seed users
+    const createdUsers = await User.insertMany(userData);
 
-    const users = [];
-    const thoughts = [];
-    const reactions = [];
+    // Seed thoughts without association to users
+    const createThoughts = await Thought.insertMany(thoughtData);
 
-    // Generate the random users
-    for (let i = 0; i < 6; i++) {
-        const newUser = generateRandomUser();
-        const user = await User.create(newUser);
-        users.push(user);
-
-    // Generate thoughts for the users
-    const thought1 = generateRandomThought(user.username);
-    thought1.username = user.username;
-    const thought2 = generateRandomThought(user.username);
-    thought2.username = user.username;
-
-    const newThought1 = await Thought.create(thought1);
-    const newThought2 = await Thought.create(thought2);
-
-    thoughts.push(newThought1, newThought2);
-
-    // Generate random reactions for the thoughts
-    const reaction1 = generateRandomReaction(user.username);
-    const reaction2 = generateRandomReaction(user.username);
-
-    const newReaction1 = await Reaction.create(reaction1);
-    const newReaction2 = await Reaction.create(reaction2);
-
-    reactions.push(newReaction1, newReaction2);
-
-    // Link thoughts with reactions
-    newThought1.reactions.push(newReaction1);
-    newThought2.reactions.push(newReaction2);
-
-    await newThought1.save();
-    await newThought2.save();
+// Map thoughtData to assign thought references to users
+createdUsers.forEach(user => {
+  thoughtData.forEach(async thought => {
+    if (thought.username === user.username) {
+      // Find the thought created for this user
+      const userThought = createThoughts.find(
+        createdThought => createdThought.username === user.username
+      );
+      user.thoughts.push(userThought._id); // Assigning thought references to user
+      await user.save(); // Save user with updates
     }
-
-    console.table(users);
-    console.table(thoughts);
-    console.table(reactions);
-    console.info('Seeding completed!');
-    process.exit(0);
-} catch (error) {
-    console.error('Error seeding data:', error);
-    process.exit(1);
-}
+  });
 });
+
+    // Map thought Data to include user references
+    const thoughtsWithUsers = thoughtData.map(thought => {
+      const user = createdUsers.find(user => user.username === thought.username);
+      thought.username = user._id;
+      return thought;
+    });
+
+    // Seed the thoughts data
+    const createdThoughts = await Thought.insertMany(thoughtsWithUsers);
+
+    // Map reactionData to include thought references
+    const reactionsWithThoughts = reactionData.map(reaction => {
+      const thought = createdThoughts[Math.floor(Math.random() * createdThoughts.length)];
+      reaction.thought = thought._id;
+      return reaction;
+    });
+
+    // Seed reactions
+    await Reaction.insertMany(reactionsWithThoughts);
+
+    console.log('Database seeded successfully!');
+  } catch (error) {
+    console.error('Error seeding database:', error);
+  }
+}
+
+// Seed the database
+seedDatabase();
