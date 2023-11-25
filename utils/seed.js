@@ -1,29 +1,24 @@
-const connection = require('../config/connection');
-const { Reaction, Thought, User } = require('../models');
+const mongoose = require('mongoose');
 const { generateRandomUser, generateRandomThought, generateRandomReaction } = require('./data');
+const User = require('../models/User');
+const Reaction = require('../models/Reaction');
+const Thought = require('../models/Thought');
 
-connection.on('error', (err) => err);
+mongoose.connect('mongodb://127.0.0.1:27017/studentsDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+});
 
-connection.once('open', async () => {
-    console.log('connected');
+mongoose.connection.on('error', (err) => {
+    console.error('Connection Error', err)
+});
 
-    // Delete all prexisting collections
-    let userCheck = await connection.db.listCollection({ name: 'users' }).toArray();
-    if (userCheck.length) {
-        await connection.dropCollection('users');
-    }
+mongoose.connection.once('open', async () => {
+    console.log('Connected to MongoDB');
 
-    let thoughtCheck = await connection.db.listCollection({ name: 'thoughts' }).toArray();
-    if (thoughtCheck.length) {
-        await connection.dropCollection('thoughts');
-    }
+    try {
+    mongoose.connection.dropDatabase();
 
-    let reactionsCheck = await connection.db.listCollections({ name: 'reactions'}).toArray();
-    if (reactionsCheck) {
-        await connection.dropCollection('reactions');
-    }
-
-    // Create an empty array to hold the users in
     const users = [];
     const thoughts = [];
     const reactions = [];
@@ -36,7 +31,9 @@ connection.once('open', async () => {
 
     // Generate thoughts for the users
     const thought1 = generateRandomThought(user.username);
+    thought1.username = user.username;
     const thought2 = generateRandomThought(user.username);
+    thought2.username = user.username;
 
     const newThought1 = await Thought.create(thought1);
     const newThought2 = await Thought.create(thought2);
@@ -65,4 +62,8 @@ connection.once('open', async () => {
     console.table(reactions);
     console.info('Seeding completed!');
     process.exit(0);
+} catch (error) {
+    console.error('Error seeding data:', error);
+    process.exit(1);
+}
 });
