@@ -2,52 +2,86 @@ const { User } = require('../models');
 
 // Controllers for the user routes
   module.exports = {
-    // Get all users
+
     async getAllUsers(req, res) {
       try {
-        const users = await User.find().populate({
-          path: 'thoughts',
-          select: '_id thoughtText username createdAt reactions reactionCount',
-        })
-        .populate('friends', '_id username email friendCount');
+        const users = await User.find()
+          .populate({
+            path: 'thoughts',
+            select: '_id thoughtText username createdAt reactions reactionCount',
+          })
+          .populate('friends', '_id username email friendCount')
+          .select('_id username email');
   
-        res.json(users);
+        const formattedUsers = users.map(user => ({
+          thoughts: user.thoughts.map(thought => ({
+            _id: thought._id,
+          })),
+          friends: user.friends.map(friend => ({
+            _id: friend._id,
+          })),
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          friendCount: user.friendCount,
+        }));
+  
+        res.json(formattedUsers);
       } catch (err) {
         console.log(err);
         return res.status(500).json(err);
       }
     },
 
-    // Get a single user
+    // Get single user
     async getSingleUser(req, res) {
       try {
         const user = await User.findOne({ _id: req.params.userId })
           .populate({
             path: 'thoughts',
-            populate: {
-                path: 'reactions',
-                select: 'reactionId createdAt _id reactionBody username',
-            },
             select: '_id thoughtText username createdAt reactions reactionCount',
           })
-          .populate({
-            path: 'friends',
-            select: '_id username email friendCount',
-            populate: {
-                path: 'thoughts',
-                select: '_id',
-            },
-          })
-          .select('_id username email friendCount');
+          .populate('friends', '_id username email friendCount')
+          .select('_id username email friendCount')
 
-        if (!user) {
-          return res.status(404).json({ message: 'No user with that ID' })
-        }
-  
-        res.json(user);
+          const formattedUser = {
+            thoughts: user.thoughts.map(thought => ({
+              _id: thought._id,
+              thoughtText: thought.thoughtText,
+              username: thought.username,
+              reactions: thought.reactions.map(reaction => ({
+                reactionId: reaction.reactionId,
+                createdAt: reaction.createdAt,
+                _id: reaction._id,
+                reactionBody: reaction.reactionBody,
+                username: reaction.username,
+              })),
+              __v: thought.__v,
+              reactionCount: thought.reactionCount,
+            })),
+            friends: user.friends.map(friend => ({
+              thoughts: friend.thoughts.map(thought => ({
+                _id: thought._id,
+              })),
+              friends: friend.friends.map(friendly => ({
+                _id: friendly._id,
+              })),
+              _id: friend._id,
+              username: friend.username,
+              email: friend.email,
+              __v: friend.__v,
+              friendCount: friend.friendCount,
+            })),
+            _id: user._id,
+            username: user.username,
+            email: user.email,
+            friendCount: user.friendCount
+          };
+
+        res.json(formattedUser);
       } catch (err) {
-        console.log(err);
-        return res.status(500).json(err);
+        console.error(err);
+        res.status(500).json(err);
       }
     },
 
