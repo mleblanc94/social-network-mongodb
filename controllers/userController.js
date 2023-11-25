@@ -5,17 +5,13 @@ const { User } = require('../models');
     // Get all users
     async getAllUsers(req, res) {
       try {
-        const users = await User.find().populate('thoughts friends', '-__v');
-        const userObj = users.map(user => ({
-            thoughts: user.thoughts.map(thought => thought.id),
-            friends: user.friends.map(friend => friend._id),
-            _id: user._id,
-            username: user.username,
-            email: user.email,
-            friendCount: user.friendCount
-        }));
+        const users = await User.find().populate({
+          path: 'thoughts',
+          select: '_id thoughtText username createdAt reactions reactionCount',
+        })
+        .populate('friends', '_id username email friendCount');
   
-        res.json(userObj);
+        res.json(users);
       } catch (err) {
         console.log(err);
         return res.status(500).json(err);
