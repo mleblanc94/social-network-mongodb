@@ -1,5 +1,4 @@
 const { types, Types } = require('mongoose');
-const { getMaxListeners } = require('../models/Reaction');
 
 const usernames = [
     'mleblanc94',
@@ -45,7 +44,7 @@ const thoughts = [
     'You are spot on!!'
 ];
 
-const getRandomArrItem = (err) => arr[Math.floor(Math.random() *arr.length)];
+const getRandomArrItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const GetRandomUsername = () => getRandomArrItem(usernames);
 const getRandomEmail = () => getRandomArrItem(emails);
