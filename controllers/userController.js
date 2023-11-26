@@ -39,10 +39,10 @@ const { User } = require('../models');
         const user = await User.findOne({ _id: req.params.userId })
           .populate({
             path: 'thoughts',
-            select: '_id thoughtText username createdAt reactions reactionCount',
+            select: '_id thoughtText username createdAt reactions __v reactionCount',
           })
           .populate('friends', '_id username email friendCount')
-          .select('_id username email friendCount')
+          .select('_id username email friendCount __v')
 
           const formattedUser = {
             thoughts: user.thoughts.map(thought => ({
@@ -117,7 +117,7 @@ const { User } = require('../models');
     // Delete a user
     async deleteUser(req, res) {
       try {
-        const user = await User.findOneAndRemove({ _id: req.params.userId });
+        const user = await User.findOneAndDelete({ _id: req.params.userId });
   
         if (!user) {
           return res.status(404).json({ message: 'No such user exists' });

@@ -1,4 +1,9 @@
 const { User, Thought } = require('../models');
+const Reaction = require('../models/Reaction');
+const mongoose = require('mongoose');
+const { Schema, model, Types } = mongoose;
+const { ObjectId } = mongoose.Types;
+
 
 module.exports = {
 // Controllers for thought routes
@@ -93,16 +98,18 @@ async deleteThought(req, res) {
 async createReaction(req, res) {
     try {
         const { reactionBody, username } = req.body;
-        const newReaction = {
+
+        // Create a new reaction
+        const newReaction = new Reaction({
             reactionBody,
-            username,
-            createdAt: new Date(),
-            reactionId: Types.ObjectId(),
-        };
+            username
+        });
+
+        const savedReaction = await newReaction.save();
 
         const updatedThought = await Thought.findByIdAndUpdate(
             req.params.thoughtId,
-            { $push: { reactions: newReaction } },
+            { $push: { reactions: savedReaction._id } },
             { new: true }
         );
 
@@ -118,14 +125,34 @@ async createReaction(req, res) {
 },
 
 // Remove a reaction by referencing the generated reaction ID
+// async removeReaction(req, res) {
+//     try {
+//         const { thoughtId, reactionId } = req.params;
+
+//         const updatedThought = await Thought.findByIdAndUpdate(
+//             thoughtId,
+//             { $pull: { reactions: { _id: reactionId } } },
+//             { new: true }
+//         );
+
+//         if (!updatedThought) {
+//             return res.status(404).json({ message: 'Thought not found' });
+//         }
+
+//         res.json(updatedThought);
+//     } catch (err) {
+//     console.error(err);
+//     res.status(500).json(err);
+// } 
+// },
+// Remove a reaction by referencing the generated reaction ID
 async removeReaction(req, res) {
     try {
-        const thoughtId = req.params.thoughtId;
-        const reactionId = req.params.reactionId;
+        const { thoughtId, reactionId } = req.params;
 
         const updatedThought = await Thought.findByIdAndUpdate(
             thoughtId,
-            { $pull: { reactions: { reactionId } } },
+            { $pull: { reactions: reactionId } },
             { new: true }
         );
 
@@ -135,8 +162,8 @@ async removeReaction(req, res) {
 
         res.json(updatedThought);
     } catch (err) {
-    console.error(err);
-    res.status(500).json(err);
-} 
-},
+        console.error(err);
+        res.status(500).json(err);
+    } 
+}
 }
